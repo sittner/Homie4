@@ -20,6 +20,7 @@ class Property_Speed(Property_Enum):
         set_value=None,
         tags=[],
         meta={},
+        restore=False,
     ):
 
         super().__init__(
@@ -36,5 +37,6 @@ class Property_Speed(Property_Enum):
             set_value,
             tags,
             meta,
+            restore,
         )
 

@@ -17,6 +17,7 @@ class Property_String(Property_Base):
         set_value=None,
         tags=[],
         meta={},
+        restore=False,
     ):
 
         super().__init__(
@@ -33,5 +34,6 @@ class Property_String(Property_Base):
             set_value,
             tags,
             meta,
+            restore,
         )
 

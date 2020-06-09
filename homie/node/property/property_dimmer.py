@@ -19,6 +19,7 @@ class Property_Dimmer(Property_Integer):
         set_value=None,
         tags=tags,
         meta={},
+        restore=False,
     ):
 
         super().__init__(
@@ -35,5 +36,6 @@ class Property_Dimmer(Property_Integer):
             set_value,
             tags,
             meta,
+            restore,
         )
 
