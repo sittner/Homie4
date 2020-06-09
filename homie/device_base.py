@@ -122,7 +122,7 @@ class Device_Base(object):
             global repeating_timer
             if repeating_timer == None:
                 repeating_timer = Repeating_Timer(
-                    self.homie_settings["update_interval"]
+                    self.homie_settings["update_interval"] * 1000
                 )
 
             repeating_timer.add_callback(self.publish_uptime)
