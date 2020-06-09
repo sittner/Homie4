@@ -58,6 +58,7 @@ class Property_Base(object):
         set_value=None,
         tags=[],
         meta={},
+        restore=False,
     ):
         if validate_id(id) is False:
             logger.error("Property ID not valid {}".format(id))
@@ -78,7 +79,8 @@ class Property_Base(object):
         self.data_format = data_format
 
         self.settable = settable
-        if settable:  # must provide a function to call to set the value
+        self.restore = restore
+        if settable or restore:  # must provide a function to call to set the value
             assert set_value
             self.set_value = set_value
 
@@ -206,10 +208,27 @@ class Property_Base(object):
                     )
 
     def get_subscriptions(self):  # subscribe to the set topic
+        subscriptions = {}
+        if self.restore:
+            subscriptions.update({self.topic: self.restore_message_handler});
         if self.settable:
-            return {"/".join((self.topic, "set")): self.set_message_handler}
-        else:
-            return {}
+            subscriptions.update({"/".join((self.topic, "set")): self.set_message_handler});
+        return subscriptions
+
+    def restore_message_handler(self, topic, payload):
+        logger.info(
+            "MQTT Property Message:  Topic {}, Payload {}".format(topic, payload)
+        )
+
+        # process only if not already initialized
+        if self._value is not None:
+            return
+
+        value = self.get_value_from_payload(payload)
+        if value is not None and self.validate_value(value):
+            self._value = value  # update without publish
+            self.set_value(value)  # notify the user
+            logger.debug("Value restored to:   {}".format(value))
 
     def set_message_handler(self, topic, payload):
         logger.info(
