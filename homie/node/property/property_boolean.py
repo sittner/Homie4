@@ -17,6 +17,7 @@ class Property_Boolean(Property_Base):
         set_value=None,
         tags=[],
         meta={},
+        restore=False,
     ):
         super().__init__(
             node,
@@ -32,6 +33,7 @@ class Property_Boolean(Property_Base):
             set_value,
             tags,
             meta,
+            restore,
         )
 
     def validate_value(self, value):

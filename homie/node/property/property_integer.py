@@ -20,6 +20,7 @@ class Property_Integer(Property_Base):
         set_value=None,
         tags=[],
         meta={},
+        restore=False,
     ):
         super().__init__(
             node,
@@ -35,6 +36,7 @@ class Property_Integer(Property_Base):
             set_value,
             tags,
             meta,
+            restore,
         )
 
         if data_format:

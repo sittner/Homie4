@@ -20,6 +20,7 @@ class Property_Enum(Property_Base):
         set_value=None,
         tags=[],
         meta={},
+        restore=False,
     ):
         assert data_format
         super().__init__(
@@ -36,6 +37,7 @@ class Property_Enum(Property_Base):
             set_value,
             tags,
             meta,
+            restore,
         )
 
         self.enum_list = data_format.split(",")

@@ -19,6 +19,7 @@ class Property_DateTime(Property_Base):
         set_value=None,
         tags=[],
         meta={},
+        restore=False,
     ):
 
         super().__init__(
@@ -35,6 +36,7 @@ class Property_DateTime(Property_Base):
             set_value,
             tags,
             meta,
+            restore,
         )
 
     def validate_value(self, value):

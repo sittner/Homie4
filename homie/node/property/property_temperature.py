@@ -17,6 +17,7 @@ class Property_Temperature(Property_Float):
         set_value=None,
         tags=[],
         meta={},
+        restore=False,
     ):
 
         super().__init__(
@@ -33,5 +34,6 @@ class Property_Temperature(Property_Float):
             set_value,
             tags,
             meta,
+            restore,
         )
 
