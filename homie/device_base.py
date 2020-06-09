@@ -289,16 +289,7 @@ class Device_Base(object):
                 )
             )  # for logging only, topic and handler for subsriptions above
 
-            if (
-                retain is False
-            ):  # OH2.5 MQTT sends set messages with retain true - need to check to avoid this problem
-                self.mqtt_subscription_handlers[topic](topic, payload)
-            else:
-                logger.warn(
-                    "Device MQTT Message received with RETAIN TRUE: Topic {}, Payload {} Retain {}  QOS {}".format(
-                        topic, payload, retain, qos
-                    )
-                )  # for logging only, topic and handler for subsriptions above
+            self.mqtt_subscription_handlers[topic](topic, payload)
 
 
 def close_devices(*arg):
