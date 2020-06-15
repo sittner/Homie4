@@ -11,7 +11,6 @@ import homie
 from homie.support.helpers import validate_id
 from homie.mqtt.homie_mqtt_client import connect_mqtt_client
 from homie.mqtt.homie_mqtt_client import close_mqtt_clients
-from homie.support.repeating_timer import Repeating_Timer
 
 import logging
 
@@ -20,8 +19,6 @@ logger = logging.getLogger(__name__)
 
 instance_count = 0  # used to track the number of device instances to allow for changing the default device id
 devices = []
-
-repeating_timer = None  # use common timer between all devices for updating state
 
 DEVICE_STATES = [
     "init",
@@ -89,7 +86,12 @@ class Device_Base(object):
 
         self.nodes = {}
 
+        self.periodics = []
+
         self.start_time = None
+
+        self.update_interval = None
+        self.next_update = None
 
         self.nodes_published = False
 
@@ -105,9 +107,42 @@ class Device_Base(object):
         #signal.signal(signal.SIGTERM, self.close)
         #signal.signal(signal.SIGINT, self.close)
 
-    def close(self, *args):
+    @staticmethod
+    def close_all():
+        logger.info ('Closing Devices')
+        global devices 
+        for device in devices:
+            device.close()
+        logger.info ('Closed Devices')
+
+        close_mqtt_clients()
+
+    def close(self):
         logger.info("Device Close {}".format(self.name))
         self.state = "disconnected"
+
+    @staticmethod
+    def periodic_all():
+        global devices 
+        for device in devices:
+            device.periodic()
+
+    def periodic(self):
+        for callback in self.periodics:
+            try:
+                callback()
+            except Exception as e:
+                logger.error("Error in periodic callback: {}  {}".format(e,traceback.format_exc()))
+
+    def periodic_update(self):
+        now = Device_Base.monotonic_ms()
+        if self.next_update is not None and now >= self.next_update:
+            self.next_update += self.update_interval
+            self.publish_uptime()
+
+    @staticmethod
+    def monotonic_ms():
+        return time.monotonic_ns() // 1000000
 
     def generate_device_id(self):
         # logger.debug ('Device instances {}'.format(instance_count))
@@ -116,16 +151,13 @@ class Device_Base(object):
 
     def start(self):  # called after the device has been built with nodes and properties
         logger.info("Device Start {}".format(self.name))
-        self.start_time = time.time()
+        now = Device_Base.monotonic_ms()
+        self.start_time = now
 
         if "stats" in self.extensions:
-            global repeating_timer
-            if repeating_timer == None:
-                repeating_timer = Repeating_Timer(
-                    self.homie_settings["update_interval"] * 1000
-                )
-
-            repeating_timer.add_callback(self.publish_uptime)
+            self.update_interval = int(self.homie_settings["update_interval"] * 1000)
+            self.next_update = now + self.update_interval
+            self.periodics.append(self.periodic_update)
 
         if (
             self.mqtt_client.mqtt_connected
@@ -186,11 +218,11 @@ class Device_Base(object):
 
     def publish_statistics(self, retain = True, qos = 1):
         self.publish("/".join((self.topic, "$stats/interval")),self.homie_settings ['update_interval'], retain, qos)
-        self.publish("/".join((self.topic, "$stats/uptime")),time.time()-self.start_time, retain, qos)
+        self.publish("/".join((self.topic, "$stats/uptime")),(Device_Base.monotonic_ms()-self.start_time) // 1000, retain, qos)
         self.publish("/".join((self.topic, "$stats/lastupdate")),datetime.now().strftime("%d/%m/%Y %H:%M:%S"), retain, qos)
 
     def publish_uptime(self, retain=True, qos=1):
-        self.publish("/".join((self.topic, "$stats/uptime")),time.time()-self.start_time, retain, qos)
+        self.publish("/".join((self.topic, "$stats/uptime")),(Device_Base.monotonic_ms()-self.start_time) // 1000, retain, qos)
         self.publish("/".join((self.topic, "$stats/lastupdate")),datetime.now().strftime("%d/%m/%Y %H:%M:%S"), retain, qos)
 
 #    def publish_homeassistant(self,hass_config,hass_payload):
@@ -222,7 +254,14 @@ class Device_Base(object):
         if self.nodes_published:  # update, publish property changes
             self.publish_nodes(self.retained, self.qos)
 
+        if hasattr(node, "periodic") and callable(getattr(node, "periodic")):
+            self.periodics.append(node.periodic)
+
     def remove_node(self, node_id):  # not tested, needs work removing topics
+        node = get_node(node_id)
+        if node is not None and hasattr(node, "periodic") and callable(getattr(node, "periodic")):
+            self.periodics.remove(node.periodic)
+
         del self.nodes[node_id]
 
         if self.nodes_published:  # update, publish property changes
@@ -291,18 +330,4 @@ class Device_Base(object):
 
             self.mqtt_subscription_handlers[topic](topic, payload)
 
-
-def close_devices(*arg):
-    logger.info ('Closing Devices')
-    global devices 
-    for device in devices:
-        device.close()
-    logger.info ('Closed Devices')
-
-    close_mqtt_clients()
-
-#atexit.register(close_devices)
-
-#signal.signal(signal.SIGTERM, close_devices)
-#signal.signal(signal.SIGINT, close_devices)
 
