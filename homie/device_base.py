@@ -193,7 +193,7 @@ class Device_Base(object):
 
         self.publish_extensions(retain, qos)
 
-        self.state = "ready"
+        # do not publish or set device state here, must wait until nodes/properties are sent
 
     def publish_extensions(self, retain=True, qos=1):
         extensions = ",".join(self.extensions)
@@ -308,7 +308,6 @@ class Device_Base(object):
 
     def mqtt_on_connection(self, connected):
         logger.info("Device MQTT Connected state is {}".format(connected))
-        # print("Device MQTT Connected state is {}".format(connected))
 
         if connected:
             if self._mqtt_connected is False:
@@ -316,6 +315,7 @@ class Device_Base(object):
                 self.publish_attributes()
                 self.publish_nodes()
                 self.subscribe_topics()
+                self.state = "ready" # publish ready state
                 #self.publish_homeassistant()
         else:
             self._mqtt_connected = False
