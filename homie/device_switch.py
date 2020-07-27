@@ -17,12 +17,12 @@ class Device_Switch(Device_Base):
 
         self.start()
 
-    def update_switch(self, onoff):  # sends updates to clients
-        self.get_node("switch").update_switch(onoff)
-        logger.debug("Switch Update {}".format(onoff))
+    def update_switch(self, state):  # sends updates to clients
+        self.get_node("switch").update_switch(state)
+        logger.debug("Switch Update {}".format(str(state)))
 
-    def set_switch(self, onoff):  # received commands from clients
-        logger.debug("Switch Set {}".format(onoff))
+    def set_switch(self, state):  # received commands from clients
+        logger.debug("Switch Set {}".format(str(state)))
 
 
     #def publish_homeassistant(self):
