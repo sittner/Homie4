@@ -87,6 +87,7 @@ class Device_Base(object):
         self.nodes = {}
 
         self.periodics = []
+        self.last_period = Device_Base.monotonic_ms()
 
         self.start_time = None
 
@@ -128,14 +129,17 @@ class Device_Base(object):
             device.periodic()
 
     def periodic(self):
+        now = Device_Base.monotonic_ms()
+        dt = now - self.last_period;
+        self.last_period = now
+
         for callback in self.periodics:
             try:
-                callback()
+                callback(now, dt)
             except Exception as e:
                 logger.error("Error in periodic callback: {}  {}".format(e,traceback.format_exc()))
 
-    def periodic_update(self):
-        now = Device_Base.monotonic_ms()
+    def periodic_update(self, now, dt):
         if self.next_update is not None and now >= self.next_update:
             self.next_update += self.update_interval
             self.publish_uptime()

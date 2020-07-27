@@ -26,20 +26,13 @@ class Node_Switch(Node_Base):
         self.max_on_time = max_on_time
         self.on_timer = 0
 
-        now = Device_Base.monotonic_ms()
-        self.last_period = now
-
     def update_switch(self, state):
         self.property.value = "ON" if state else "OFF"
 
     def handle_switch(self, onoff):
         pass
 
-    def periodic(self):
-        now = Device_Base.monotonic_ms()
-        dt = now - self.last_period;
-        self.last_period = now
-
+    def periodic(self, now, dt):
         if self.property.value == "ON" and self.max_on_time > 0:
             self.on_timer += dt
 

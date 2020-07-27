@@ -56,21 +56,15 @@ class Node_Rollershutter(Node_Base):
         self.pos = 0
 
         now = Device_Base.monotonic_ms()
-        self.last_period = now
         self.last_up = now
         self.last_down = now
 
-    def periodic(self):
-        now = Device_Base.monotonic_ms()
-
+    def periodic(self, now, dt):
         self.out = 0
         if self.prop_cmd.value == "DOWN" and now >= (self.last_down + self.time_pause):
             self.out = 1
         if self.prop_cmd.value == "UP" and now >= (self.last_up + self.time_pause):
             self.out = -1
-
-        dt = now - self.last_period;
-        self.last_period = now
 
         if self.out > 0:
             self.last_up = now
