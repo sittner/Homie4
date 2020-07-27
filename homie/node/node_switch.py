@@ -1,7 +1,7 @@
 from .node_base import Node_Base
 
 from homie.node.property.property_switch import Property_Switch
-
+from homie.device_base import Device_Base
 
 class Node_Switch(Node_Base):
     def __init__(
@@ -13,13 +13,42 @@ class Node_Switch(Node_Base):
         retain=True,
         qos=1,
         set_switch=None,
+        max_on_time = 0,
     ):
         super().__init__(device, id, name, type_, retain, qos)
 
         assert set_switch  # must provide a function to set the value of the switch
 
-        self.add_property(Property_Switch(self, set_value=set_switch))
+        self.property = Property_Switch(self, set_value=self.handle_switch, restore=True)
+        self.add_property(self.property)
 
-    def update_switch(self, onoff):
-        self.get_property("switch").value = onoff
+        self.set_switch = set_switch
+        self.max_on_time = max_on_time
+        self.on_timer = 0
+
+        now = Device_Base.monotonic_ms()
+        self.last_period = now
+
+    def update_switch(self, state):
+        self.property.value = "ON" if state else "OFF"
+
+    def handle_switch(self, onoff):
+        pass
+
+    def periodic(self):
+        now = Device_Base.monotonic_ms()
+        dt = now - self.last_period;
+        self.last_period = now
+
+        if self.property.value == "ON" and self.max_on_time > 0:
+            self.on_timer += dt
+
+        if self.on_timer > self.max_on_time:
+            self.update_switch(False)
+
+        if self.property.value == "ON":
+            self.set_switch(True)
+        else:
+            self.set_switch(False)
+            self.on_timer = 0
 
